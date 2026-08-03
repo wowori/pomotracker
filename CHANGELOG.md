@@ -5,6 +5,23 @@ All notable changes to pomotracker are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] - 2026-08-03
+
+### Fixed
+
+- Flag parser no longer swallows a positional that follows a boolean flag
+  (`pomo start --force 25` keeps the 25 as the duration)
+- `--` is now honored as an end-of-options marker, so
+  `pomo start -- -5m` behaves as documented
+- `--help`/`-h` after a subcommand prints help instead of starting a session
+- Config key `beep` now actually controls the console beep; it no longer only
+  fires when `notify` is on
+- The background worker no longer depends on reading `active.json` at startup,
+  removing a race where a session could start without a worker
+- `npm test` runs on Node 22 (the old `node --test test/` invocation failed
+  with MODULE_NOT_FOUND)
+- `fmtDuration` no longer drops seconds for durations over an hour
+
 ## [0.1.0] - 2026-06-26
 
 ### Added
@@ -42,4 +59,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - The detached worker rechecks `active.json` right before finalizing and
   exits silently if the session was replaced by `--force` or `stop`
 
-[0.1.0]: https://github.com/wowori/pomo/releases/tag/v0.1.0
+[0.1.1]: https://github.com/wowori/pomotracker/releases/tag/v0.1.1
+[0.1.0]: https://github.com/wowori/pomotracker/releases/tag/v0.1.0

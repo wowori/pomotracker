@@ -18,6 +18,11 @@ test('fmtDuration: mixed', () => {
   assert.equal(fmtDuration(3600), '1h');
 });
 
+test('fmtDuration: keeps seconds when over an hour', () => {
+  assert.equal(fmtDuration(3605), '1h 5s');
+  assert.equal(fmtDuration(3600 + 60 + 5), '1h 1m 5s');
+});
+
 test('fmtDuration: clamps negatives to zero', () => {
   assert.equal(fmtDuration(-10), '0s');
 });

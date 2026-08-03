@@ -22,7 +22,12 @@ export function fmtDuration(seconds) {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
-  if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  if (h > 0) {
+    if (m > 0 && s > 0) return `${h}h ${m}m ${s}s`;
+    if (m > 0) return `${h}h ${m}m`;
+    if (s > 0) return `${h}h ${s}s`;
+    return `${h}h`;
+  }
   return s > 0 ? `${m}m ${s}s` : `${m}m`;
 }
 
@@ -42,7 +47,7 @@ export function fmtClock(seconds) {
 
 // Parse "25", "25m", "1h30m", "90s" -> seconds. Throws on garbage.
 // Both string and number inputs: bare number = minutes, "25" = 25 minutes.
-// Capped at MAX_DURATION_SEC (24h) — anything longer is almost certainly a typo.
+// Capped at MAX_DURATION_SEC (24h). Anything longer is almost certainly a typo.
 export const MAX_DURATION_SEC = 24 * 60 * 60;
 
 export function parseDuration(input) {

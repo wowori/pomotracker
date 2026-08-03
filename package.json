@@ -1,6 +1,6 @@
 {
   "name": "pomotracker",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Cross-platform Pomodoro timer CLI. No dependencies, just Node.js.",
   "type": "module",
   "bin": {
@@ -16,7 +16,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test",
     "start": "node bin/pomo.mjs"
   },
   "keywords": [
@@ -29,9 +29,9 @@
   "author": "wowori",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wowori/pomo.git"
+    "url": "git+https://github.com/wowori/pomotracker.git"
   },
   "bugs": {
-    "url": "https://github.com/wowori/pomo/issues"
+    "url": "https://github.com/wowori/pomotracker/issues"
   }
 }

@@ -14,43 +14,50 @@ function getVersion() {
   return JSON.parse(readFileSync(PKG_PATH, 'utf8')).version;
 }
 
-// Tiny flag parser. Recognizes --flag, --flag value, --flag=value, -f value.
-function parseFlags(argv) {
+// Tiny flag parser. Recognizes --flag, --flag value, --flag=value, -f value,
+// and '--' as an end-of-options marker (everything after is positional).
+// Only --label/-l, --limit, and --type take values. Every other flag is
+// boolean, so a value never swallows the next token ('--force 25' keeps 25).
+const VALUE_FLAGS = new Set(['label', 'l', 'limit', 'type']);
+
+export function parseFlags(argv) {
   const flags = {};
   const positional = [];
+  let onlyPositional = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a.startsWith('--')) {
-      const body = a.slice(2);
-      const eq = body.indexOf('=');
-      if (eq >= 0) {
-        flags[body.slice(0, eq)] = body.slice(eq + 1);
+    if (onlyPositional || !a.startsWith('-') || a === '-') {
+      positional.push(a);
+      continue;
+    }
+    if (a === '--') {
+      onlyPositional = true;
+      continue;
+    }
+    let body = a.slice(a.startsWith('--') ? 2 : 1);
+    let inlineValue;
+    const eq = body.indexOf('=');
+    if (eq >= 0) {
+      inlineValue = body.slice(eq + 1);
+      body = body.slice(0, eq);
+    }
+    if (VALUE_FLAGS.has(body)) {
+      if (inlineValue !== undefined) {
+        flags[body] = inlineValue;
       } else {
         const next = argv[i + 1];
-        if (next !== undefined && !next.startsWith('-')) {
-          flags[body] = next;
-          i++;
-        } else {
-          flags[body] = true;
-        }
-      }
-    } else if (a.startsWith('-') && a.length > 1) {
-      const body = a.slice(1);
-      const next = argv[i + 1];
-      if (next !== undefined && !next.startsWith('-')) {
+        if (next === undefined) throw new Error(`--${body} requires a value`);
         flags[body] = next;
         i++;
-      } else {
-        flags[body] = true;
       }
     } else {
-      positional.push(a);
+      flags[body] = inlineValue !== undefined ? inlineValue : true;
     }
   }
   return { flags, positional };
 }
 
-const HELP = `${c.bold('pomo')} — cross-platform Pomodoro timer (no dependencies)
+const HELP = `${c.bold('pomo')} - cross-platform Pomodoro timer (no dependencies)
 
 ${c.bold('Usage:')}
   pomo start [duration] [--label "..."] [--force]
@@ -203,6 +210,10 @@ export async function run(argv) {
     return;
   }
   const { flags, positional } = parseFlags(argv);
+  if (flags.help || flags.h) {
+    help();
+    return;
+  }
   const cmd = positional[0];
   const rest = positional.slice(1);
 
@@ -217,7 +228,7 @@ export async function run(argv) {
         label,
         force: !!flags.force,
       });
-      console.log(`${c.cyan('Focus')} session started: ${fmtClock(rec.durationSec)}${rec.label ? ` — ${rec.label}` : ''}`);
+      console.log(`${c.cyan('Focus')} session started: ${fmtClock(rec.durationSec)}${rec.label ? ` - ${rec.label}` : ''}`);
       console.log(c.dim(`Ends at ${new Date(rec.deadline).toLocaleTimeString()} (pid ${rec.childPid})`));
       break;
     }
@@ -227,7 +238,7 @@ export async function run(argv) {
         ? flags.label || flags.l
         : undefined;
       const rec = startBreak({ minutes, label, force: !!flags.force });
-      console.log(`${c.magenta('Break')} started: ${fmtClock(rec.durationSec)}${rec.label ? ` — ${rec.label}` : ''}`);
+      console.log(`${c.magenta('Break')} started: ${fmtClock(rec.durationSec)}${rec.label ? ` - ${rec.label}` : ''}`);
       console.log(c.dim(`Ends at ${new Date(rec.deadline).toLocaleTimeString()} (pid ${rec.childPid})`));
       break;
     }

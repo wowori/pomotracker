@@ -48,7 +48,7 @@ pomo start -- -5m
 pomo start                          # focus, default 25m
 pomo start 1h30m --label "deep work"
 pomo break 10
-pomo status                         # 00:24 left (of 01:30) — deep work
+pomo status                         # 00:24 left (of 01:30) - deep work
 pomo stats week
 pomo log -n 5
 pomo config set focusMinutes 50
@@ -108,7 +108,7 @@ stopped. This handles system reboots, kills, and `pomo stop`.
 ## Development
 
 ```
-git clone https://github.com/wowori/pomo
+git clone https://github.com/wowori/pomotracker
 cd pomo
 npm test
 ```

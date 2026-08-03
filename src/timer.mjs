@@ -67,8 +67,8 @@ function reconcile() {
       completed: true,
     });
     clearActive();
+    if (active.beepOnDone) beep();
     if (active.notifyOnDone) {
-      beep();
       notify({ title: 'Pomodoro', body: `${active.type === 'focus' ? 'Focus' : 'Break'} complete` });
     }
     return null;
@@ -86,9 +86,11 @@ function reconcile() {
   return null;
 }
 
-function spawnWorker() {
+// The worker gets start/deadline as argv, so it does not depend on reading
+// active.json at startup (avoids a race with the parent writing it).
+function spawnWorker({ start, deadline }) {
   const childScript = join(__dirname, '..', 'bin', 'pomo-worker.mjs');
-  const child = spawn(process.execPath, [childScript, ACTIVE_PATH], {
+  const child = spawn(process.execPath, [childScript, ACTIVE_PATH, start, deadline], {
     detached: true,
     stdio: 'ignore',
     windowsHide: true,
@@ -102,7 +104,7 @@ function beginSession({ type, minutes, label, cfg, force = false }) {
   const existing = readActive();
   if (existing) {
     if (!force) {
-      const remaining = Math.round((new Date(existing.deadline) - Date.now()) / 1000);
+      const remaining = Math.max(0, Math.round((new Date(existing.deadline) - Date.now()) / 1000));
       throw new Error(
         `a session is already active (${existing.type}, ${fmtClock(remaining)} left). ` +
           `Use --force to replace it, or 'pomo stop' to cancel.`,
@@ -114,14 +116,17 @@ function beginSession({ type, minutes, label, cfg, force = false }) {
   const durationSec = minutes ? parseDuration(minutes) : defaultMin * 60;
   const startTime = new Date();
   const deadline = new Date(startTime.getTime() + durationSec * 1000);
-  const childPid = spawnWorker();
+  const startIso = startTime.toISOString();
+  const deadlineIso = deadline.toISOString();
+  const childPid = spawnWorker({ start: startIso, deadline: deadlineIso });
   const record = {
     type,
     label: label || cfg.label || '',
-    start: startTime.toISOString(),
-    deadline: deadline.toISOString(),
+    start: startIso,
+    deadline: deadlineIso,
     durationSec,
     notifyOnDone: cfg.notify,
+    beepOnDone: cfg.beep,
     childPid,
   };
   writeActive(record);
@@ -169,7 +174,7 @@ export function status({ json = false } = {}) {
     else console.log('No active session.');
     return { active: null };
   }
-  const remainingSec = Math.round((new Date(active.deadline) - Date.now()) / 1000);
+  const remainingSec = Math.max(0, Math.round((new Date(active.deadline) - Date.now()) / 1000));
   const total = active.durationSec;
   const elapsed = total - remainingSec;
   if (json) {
@@ -188,7 +193,7 @@ export function status({ json = false } = {}) {
   } else {
     const left = fmtClock(remainingSec);
     const totalStr = fmtClock(total);
-    console.log(`${active.type === 'focus' ? 'Focus' : 'Break'} session: ${left} left (of ${totalStr})${active.label ? ` — ${active.label}` : ''}`);
+    console.log(`${active.type === 'focus' ? 'Focus' : 'Break'} session: ${left} left (of ${totalStr})${active.label ? ` - ${active.label}` : ''}`);
   }
   return { active, remainingSec };
 }

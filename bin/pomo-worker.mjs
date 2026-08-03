@@ -1,18 +1,16 @@
-// Detached worker: waits until the deadline stored in active.json,
-// then finalizes the session (writes a record, fires beep+notification).
+// Detached worker: waits until the deadline passed in as argv, then
+// finalizes the session (writes a record, fires beep+notification).
 // Self-deletes: re-reads active.json right before acting to ensure it is still
-// pointed at this PID; if not, exits silently.
+// pointed at this session; if not, exits silently.
 
-import { readFileSync, writeFileSync, unlinkSync, existsSync } from 'node:fs';
-import { spawn } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { readFileSync, unlinkSync, existsSync } from 'node:fs';
 import { appendSession } from '../src/sessions.mjs';
 import { beep, notify } from '../src/notify.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const activePath = process.argv[2];
-if (!activePath) process.exit(1);
+const expectedStart = process.argv[3];
+const expectedDeadline = process.argv[4];
+if (!activePath || !expectedStart || !expectedDeadline) process.exit(1);
 
 function readActive() {
   if (!existsSync(activePath)) return null;
@@ -36,8 +34,8 @@ function finalize(active) {
   try {
     unlinkSync(activePath);
   } catch {}
+  if (active.beepOnDone) beep();
   if (active.notifyOnDone) {
-    beep();
     notify({
       title: 'Pomodoro',
       body: `${active.type === 'focus' ? 'Focus' : 'Break'} complete${active.label ? `: ${active.label}` : ''}`,
@@ -46,14 +44,12 @@ function finalize(active) {
 }
 
 (async () => {
-  const initial = readActive();
-  if (!initial) process.exit(0);
-  const deadline = new Date(initial.deadline).getTime();
+  const deadline = new Date(expectedDeadline).getTime();
   const delay = deadline - Date.now();
   if (delay > 0) await new Promise((r) => setTimeout(r, delay));
   // Re-read right before acting. If someone replaced/stopped the session, bail.
   const current = readActive();
   if (!current) process.exit(0);
-  if (current.start !== initial.start || current.deadline !== initial.deadline) process.exit(0);
+  if (current.start !== expectedStart || current.deadline !== expectedDeadline) process.exit(0);
   finalize(current);
 })();
