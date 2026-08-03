@@ -2,6 +2,8 @@
 
 Cross-platform Pomodoro timer CLI. Zero dependencies, Node.js >= 18.
 
+[![npm version](https://img.shields.io/npm/v/pomotracker.svg)](https://www.npmjs.com/package/pomotracker)
+
 `pomo start` returns immediately. The session runs in a detached worker.
 When time is up you get a beep and a desktop notification. Sessions are
 logged to `~/.pomo/sessions.jsonl`.
